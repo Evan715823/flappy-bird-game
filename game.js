@@ -51,6 +51,10 @@ function applyDifficulty() {
     pipes.frequency = settings.pipeFrequency;
 }
 
+// 添加猫咪图片 (现在用作背景)
+const catImage = new Image();
+catImage.src = "cat.png";
+
 // 游戏背景
 const background = {
     x: 0,
@@ -59,8 +63,14 @@ const background = {
     height: canvas.height,
     color: '#70c5ce',
     draw() {
+        // 先填充底色
         ctx.fillStyle = this.color;
         ctx.fillRect(this.x, this.y, this.width, this.height);
+
+        // 然后绘制猫咪图片作为背景 (半透明效果)
+        ctx.globalAlpha = 0.2; // 设置透明度
+        ctx.drawImage(catImage, 0, 0, canvas.width, canvas.height);
+        ctx.globalAlpha = 1.0; // 恢复透明度
     }
 };
 
@@ -81,22 +91,19 @@ const ground = {
     }
 };
 
-// 小鸟
+// 小鸟（德文猫）
 const bird = {
     x: 50,
     y: 150,
-    width: 34,
-    height: 24,
+    width: 40,
+    height: 40,
     gravity: 0.15,
     velocity: 0,
     jump: 3.5,
-    color: '#ffdb15', // 黄色主体
-    eyeColor: '#ffffff', // 白色眼睛
-    pupilColor: '#000000', // 黑色瞳孔
-    beakColor: '#ff7b00', // 橙色喙
-    wingColor: '#ff9900', // 橙色翅膀
     rotation: 0,
-    maxVelocity: 5, // 限制最大下落速度，使游戏手感更好
+    maxVelocity: 5,
+    tongueOut: true, // 控制舌头是否伸出
+    tongueTimer: 0,  // 舌头动画计时器
 
     update() {
         // 如果游戏已开始，应用重力
@@ -131,6 +138,13 @@ const bird = {
             this.y = 0;
             this.velocity = 0.5;
         }
+
+        // 舌头动画计时
+        this.tongueTimer++;
+        if (this.tongueTimer > 60) { // 每60帧切换一次舌头状态
+            this.tongueOut = !this.tongueOut;
+            this.tongueTimer = 0;
+        }
     },
 
     flap() {
@@ -143,39 +157,67 @@ const bird = {
         ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
         ctx.rotate(this.rotation);
 
-        // 绘制小鸟身体
-        ctx.fillStyle = this.color;
+        // 绘制德文猫
+        const x = -this.width / 2;
+        const y = -this.height / 2;
+
+        // 绘制猫身体（黑色椭圆）
+        ctx.fillStyle = 'black';
         ctx.beginPath();
-        ctx.ellipse(0, 0, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(x + this.width / 2, y + this.height / 2, this.width / 2, this.height / 2, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // 绘制翅膀（随时间煽动）
-        ctx.fillStyle = this.wingColor;
+        // 绘制猫眼睛（绿色圆形）
+        ctx.fillStyle = '#84e8a3'; // 浅绿色
         ctx.beginPath();
-        const wingOffset = Math.sin(frames * 0.3) * 5;
-        ctx.ellipse(-5, wingOffset, this.width / 4, this.height / 3, Math.PI / 4, 0, Math.PI * 2);
+        const eyeSize = this.width * 0.15;
+        // 左眼
+        ctx.arc(x + this.width * 0.3, y + this.height * 0.35, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+        // 右眼
+        ctx.arc(x + this.width * 0.7, y + this.height * 0.35, eyeSize, 0, Math.PI * 2);
         ctx.fill();
 
-        // 绘制眼睛
-        ctx.fillStyle = this.eyeColor;
+        // 绘制猫瞳孔（黑色椭圆）
+        ctx.fillStyle = 'black';
+        const pupilSize = eyeSize * 0.6;
+        // 左瞳孔
         ctx.beginPath();
-        ctx.arc(this.width / 4, -this.height / 6, this.width / 10, 0, Math.PI * 2);
+        ctx.ellipse(x + this.width * 0.3, y + this.height * 0.35, pupilSize, pupilSize * 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // 右瞳孔
+        ctx.beginPath();
+        ctx.ellipse(x + this.width * 0.7, y + this.height * 0.35, pupilSize, pupilSize * 2, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        // 绘制瞳孔
-        ctx.fillStyle = this.pupilColor;
+        // 绘制猫耳朵
+        ctx.fillStyle = 'black';
+        // 左耳
         ctx.beginPath();
-        ctx.arc(this.width / 4 + 1, -this.height / 6, this.width / 20, 0, Math.PI * 2);
+        ctx.moveTo(x + this.width * 0.2, y + this.height * 0.1);
+        ctx.lineTo(x + this.width * 0.1, y - this.height * 0.2);
+        ctx.lineTo(x + this.width * 0.3, y);
+        ctx.fill();
+        // 右耳
+        ctx.beginPath();
+        ctx.moveTo(x + this.width * 0.8, y + this.height * 0.1);
+        ctx.lineTo(x + this.width * 0.9, y - this.height * 0.2);
+        ctx.lineTo(x + this.width * 0.7, y);
         ctx.fill();
 
-        // 绘制喙
-        ctx.fillStyle = this.beakColor;
+        // 绘制鼻子（白色小点）
+        ctx.fillStyle = 'white';
         ctx.beginPath();
-        ctx.moveTo(this.width / 2, 0);
-        ctx.lineTo(this.width / 2 + this.width / 4, -this.height / 8);
-        ctx.lineTo(this.width / 2 + this.width / 4, this.height / 8);
-        ctx.closePath();
+        ctx.arc(x + this.width * 0.5, y + this.height * 0.5, this.width * 0.05, 0, Math.PI * 2);
         ctx.fill();
+
+        // 绘制舌头（粉色，会动）
+        if (this.tongueOut) {
+            ctx.fillStyle = '#ff9999'; // 粉色
+            ctx.beginPath();
+            ctx.arc(x + this.width * 0.5, y + this.height * 0.6, this.width * 0.1, 0, Math.PI);
+            ctx.fill();
+        }
 
         ctx.restore();
     }
@@ -228,22 +270,22 @@ const effects = {
     }
 };
 
-// 管道
+// 管道（现在是猫条）
 const pipes = {
     position: [],
     top: {
-        color: '#73bf2e'
+        color: '#ffb347'  // 橙黄色，猫条颜色
     },
     bottom: {
-        color: '#73bf2e'
+        color: '#ffb347'  // 橙黄色，猫条颜色
     },
     width: 52,
     height: 400,
     gap: 150,
     maxYPosition: -150,
     dx: 1.2,
-    frequency: 150, // 新增参数用于控制管道生成频率
-    showHitboxes: false, // 是否显示碰撞盒（调试用）
+    frequency: 150,
+    showHitboxes: false,
 
     update() {
         if (gameStarted && !gameOver) {
@@ -322,22 +364,106 @@ const pipes = {
         for (let i = 0; i < this.position.length; i++) {
             let p = this.position[i];
 
-            // 上管道
-            ctx.fillStyle = this.top.color;
-            ctx.fillRect(p.x, p.y, this.width, this.height);
+            // 绘制上方猫条
+            this.drawCatStick(p.x, p.y, this.width, this.height, true);
 
-            // 管道顶部
-            ctx.fillStyle = '#42692b';
-            ctx.fillRect(p.x - 2, p.y + this.height - 20, this.width + 4, 20);
-
-            // 下管道
-            ctx.fillStyle = this.bottom.color;
-            ctx.fillRect(p.x, p.y + this.height + this.gap, this.width, this.height);
-
-            // 管道顶部
-            ctx.fillStyle = '#42692b';
-            ctx.fillRect(p.x - 2, p.y + this.height + this.gap, this.width + 4, 20);
+            // 绘制下方猫条
+            this.drawCatStick(p.x, p.y + this.height + this.gap, this.width, this.height, false);
         }
+    },
+
+    // 绘制猫条的方法
+    drawCatStick(x, y, width, height, isTop) {
+        const stickWidth = width;
+        const segmentHeight = 30;  // 每段猫条的高度
+        const segments = Math.floor(height / segmentHeight);
+
+        // 猫条主体颜色（橙黄色）
+        ctx.fillStyle = '#ffb347';
+
+        // 如果是顶部猫条，从下往上画；如果是底部猫条，从上往下画
+        const startY = isTop ? y + height - segmentHeight : y;
+
+        for (let i = 0; i < segments; i++) {
+            const segmentY = isTop ?
+                startY - i * segmentHeight :
+                startY + i * segmentHeight;
+
+            // 绘制猫条主体
+            ctx.fillRect(x, segmentY, stickWidth, segmentHeight - 2);
+
+            // 添加猫条纹理（横条纹）
+            ctx.fillStyle = '#e69422';  // 深一点的橙色
+            for (let j = 0; j < 3; j++) {
+                const stripeY = segmentY + (segmentHeight / 4) * j + 2;
+                ctx.fillRect(x, stripeY, stickWidth, 2);
+            }
+
+            // 恢复主体颜色
+            ctx.fillStyle = '#ffb347';
+        }
+
+        // 绘制猫条末端（如果是顶部猫条则在底部，如果是底部猫条则在顶部）
+        const endY = isTop ? y + height - segmentHeight : y;
+
+        // 绘制弧形末端
+        ctx.fillStyle = '#ff9c2a';  // 稍深一点的橙色
+        ctx.beginPath();
+        if (isTop) {
+            ctx.ellipse(x + stickWidth / 2, endY + segmentHeight, stickWidth / 2, segmentHeight / 3, 0, 0, Math.PI, true);
+        } else {
+            ctx.ellipse(x + stickWidth / 2, endY, stickWidth / 2, segmentHeight / 3, 0, Math.PI, Math.PI * 2, true);
+        }
+        ctx.fill();
+
+        // 添加猫咪头部图案在末端（可选）
+        if ((isTop && y + height > 0) || (!isTop && y < canvas.height)) {
+            this.drawCatFace(x + stickWidth / 2, isTop ? y + height : y, isTop);
+        }
+    },
+
+    // 在猫条末端绘制简单的猫脸
+    drawCatFace(x, y, isTop) {
+        const size = this.width / 2;
+        const offsetY = isTop ? 0 : -size;
+
+        // 猫脸（圆形）
+        ctx.fillStyle = '#ff8c00';  // 深橙色
+        ctx.beginPath();
+        ctx.arc(x, y + offsetY, size / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 眼睛
+        ctx.fillStyle = 'white';
+        const eyeSize = size / 8;
+        // 左眼
+        ctx.beginPath();
+        ctx.arc(x - size / 5, y + offsetY - size / 8, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+        // 右眼
+        ctx.beginPath();
+        ctx.arc(x + size / 5, y + offsetY - size / 8, eyeSize, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 猫鼻子
+        ctx.fillStyle = '#ff6347';  // 番茄色
+        ctx.beginPath();
+        ctx.arc(x, y + offsetY + size / 10, eyeSize / 1.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 猫胡须
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 1;
+        // 左侧胡须
+        ctx.beginPath();
+        ctx.moveTo(x - size / 8, y + offsetY + size / 8);
+        ctx.lineTo(x - size / 2, y + offsetY + size / 6);
+        ctx.stroke();
+        // 右侧胡须
+        ctx.beginPath();
+        ctx.moveTo(x + size / 8, y + offsetY + size / 8);
+        ctx.lineTo(x + size / 2, y + offsetY + size / 6);
+        ctx.stroke();
     },
 
     // 显示碰撞盒的方法（调试用）
